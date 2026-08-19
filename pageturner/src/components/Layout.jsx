@@ -4,9 +4,9 @@ import Footer from './Footer';
 
 function Layout() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Navbar />
-      <main style={{ flex: 1, padding: '20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
         <Outlet />
       </main>
       <Footer />

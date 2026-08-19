@@ -10,7 +10,6 @@ function SearchResults() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch data whenever the 'query' from the URL changes
   useEffect(() => {
     if (!query) return;
 
@@ -19,11 +18,8 @@ function SearchResults() {
       setError(null);
       try {
         const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch books. Please try again.');
-        }
+        if (!response.ok) throw new Error('Failed to fetch books. Please try again.');
         const data = await response.json();
-        // Open Library returns the list of books inside the 'docs' array
         setBooks(data.docs || []);
       } catch (err) {
         setError(err.message);
@@ -37,56 +33,67 @@ function SearchResults() {
 
   return (
     <div>
-      <h2>Search Results for "{query}"</h2>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">
+        {query ? `Results for "${query}"` : 'Browse Books'}
+      </h2>
       
-      {/* Include the search bar again so users can easily search again */}
-      <SearchBar />
+      <div className="mb-8">
+        <SearchBar />
+      </div>
       
-      {/* 1. Loading State */}
-      {loading && <p style={{ textAlign: 'center', fontSize: '18px' }}>Loading books...</p>}
+      {loading && (
+        <div className="text-center py-12">
+          <p className="text-lg text-gray-600">Loading books...</p>
+        </div>
+      )}
       
-      {/* 2. Error State */}
-      {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+      {error && (
+        <div className="text-center py-12">
+          <p className="text-lg text-red-600">{error}</p>
+        </div>
+      )}
       
-      {/* 3. Empty State */}
       {!loading && !error && books.length === 0 && query && (
-        <p style={{ textAlign: 'center' }}>No books found for "{query}". Try a different search term.</p>
+        <div className="text-center py-12">
+          <p className="text-lg text-gray-600">No books found for "{query}". Try a different search term.</p>
+        </div>
       )}
 
-      {/* 4. Data Display State */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', marginTop: '20px' }}>
-        {}
-        {books.slice(0, 20).map((book) => (
-          <Link 
-            to={`/book/${encodeURIComponent(book.key)}`} 
-            key={book.key} 
-            style={{ textDecoration: 'none', color: 'inherit', border: '1px solid #eee', padding: '10px', borderRadius: '8px', textAlign: 'center', transition: 'transform 0.2s' }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            {}
-            {book.cover_i ? (
-              <img 
-                src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`} 
-                alt={`Cover of ${book.title}`} 
-                style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px' }}
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/150x220?text=No+Cover'; }}
-              />
-            ) : (
-              <div style={{ width: '100%', height: '220px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', marginBottom: '10px', color: '#999' }}>
-                No Cover
+      {!loading && !error && books.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {books.slice(0, 20).map((book) => (
+            <Link 
+              to={`/book/${encodeURIComponent(book.key)}`} 
+              key={book.key} 
+              className="group bg-white rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col"
+            >
+              <div className="aspect-[2/3] bg-gray-100 relative overflow-hidden">
+                {book.cover_i ? (
+                  <img 
+                    src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`} 
+                    alt={`Cover of ${book.title}`} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => { e.target.src = 'https://via.placeholder.com/150x220?text=No+Cover'; }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                    No Cover
+                  </div>
+                )}
               </div>
-            )}
-            
-            <h3 style={{ margin: '0 0 5px', fontSize: '16px', height: '40px', overflow: 'hidden' }}>{book.title}</h3>
-            <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-              {book.author_name ? book.author_name[0] : 'Unknown Author'}
-            </p>
-          </Link>
-        ))}
-      </div>
+              <div className="p-3 flex-1 flex flex-col">
+                <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 mb-1">
+                  {book.title}
+                </h3>
+                <p className="text-xs text-gray-500 line-clamp-1">
+                  {book.author_name ? book.author_name[0] : 'Unknown Author'}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
 export default SearchResults;

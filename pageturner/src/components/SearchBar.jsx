@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 
 function SearchBar() {
   const [query, setQuery] = useState('');
@@ -13,21 +14,23 @@ function SearchBar() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-3 max-w-xl mx-auto">
+    <form onSubmit={handleSubmit} className="relative w-full max-w-xl mx-auto">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search for books, authors..."
-        className="flex-1 px-4 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+        placeholder="What do you want to read next?"
+        className="w-full pl-12 pr-4 py-4 bg-white border border-burgundy-200 rounded-2xl shadow-soft focus:outline-none focus:ring-2 focus:ring-burgundy-500 focus:border-transparent transition-all text-lg placeholder-gray-400"
       />
       <button 
         type="submit" 
-        className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
+        className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-burgundy-600 text-white font-medium rounded-xl hover:bg-burgundy-700 transition-colors"
       >
         Search
       </button>
     </form>
   );
 }
+
 export default SearchBar;

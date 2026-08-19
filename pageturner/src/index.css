@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+/* Define our custom Scriptorium theme */
+@theme {
+  --color-burgundy-50: #F5E6E8;
+  --color-burgundy-100: #E8CDD2;
+  --color-burgundy-200: #D4A5AD;
+  --color-burgundy-300: #BF7D88;
+  --color-burgundy-400: #A95A66;
+  --color-burgundy-500: #943D4A;
+  --color-burgundy-600: #722F37;
+  --color-burgundy-700: #5F272E;
+  --color-burgundy-800: #4B1F24;
+  --color-burgundy-900: #3D191E;
+
+  --color-cream-50: #FEFDFB;
+  --color-cream-100: #F9F5F0;
+  --color-cream-200: #F0E8DC;
+  --color-cream-300: #E8DCC8;
+  --color-cream-400: #D4C8B0;
+
+  --color-gold-400: #D4B87E;
+  --color-gold-500: #C9A961;
+  --color-gold-600: #B89850;
+
+  --font-family-serif: 'Playfair Display', serif;
+  --font-family-sans: 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-cream-100 text-gray-800 antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+/* Pinterest-style Masonry Grid Utilities */
+.masonry-grid {
+  column-count: 2;
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .masonry-grid { column-count: 3; }
+}
+
+@media (min-width: 768px) {
+  .masonry-grid { column-count: 4; }
+}
+
+@media (min-width: 1024px) {
+  .masonry-grid { column-count: 5; }
+}
+
+.break-inside-avoid {
+  break-inside: avoid;
+}

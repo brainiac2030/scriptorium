@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
+  const { user, logout } = useAuth();
+
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-burgundy-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,9 +34,30 @@ function Navbar() {
 
           {/* Right Side */}
           <div className="flex items-center gap-4">
-            <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-burgundy-600 text-cream-50 rounded-full hover:bg-burgundy-700 transition-colors font-medium text-sm shadow-sm">
-              <span>My Library</span>
-            </button>
+            {user ? (
+              <>
+                <Link 
+                  to="/dashboard" 
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-burgundy-600 text-cream-50 rounded-full hover:bg-burgundy-700 transition-colors font-medium text-sm shadow-sm"
+                >
+                  <span>My Library</span>
+                </Link>
+                <button
+                  onClick={logout}
+                  className="p-2 text-gray-600 hover:text-burgundy-600 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <Link 
+                to="/login" 
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-burgundy-600 text-cream-50 rounded-full hover:bg-burgundy-700 transition-colors font-medium text-sm shadow-sm"
+              >
+                <span>Sign In</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>

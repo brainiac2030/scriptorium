@@ -15,6 +15,9 @@ class User(db.Model):
     
     collections = db.relationship('Collection', backref='user', lazy=True, cascade='all, delete-orphan')
     saved_books = db.relationship('SavedBook', backref='user', lazy=True, cascade='all, delete-orphan')
+    reading_sessions = db.relationship('ReadingSession', backref='user', lazy=True, cascade='all, delete-orphan')
+    quotes = db.relationship('BookQuote', backref='user', lazy=True, cascade='all, delete-orphan')
+    reading_goals = db.relationship('ReadingGoal', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -41,6 +44,42 @@ class SavedBook(db.Model):
     title = db.Column(db.String(200), nullable=False)
     author = db.Column(db.String(200), nullable=False)
     cover_id = db.Column(db.Integer, nullable=True)
+    total_pages = db.Column(db.Integer, nullable=True)
+    current_page = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='to_read')
+    rating = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    start_date = db.Column(db.DateTime, nullable=True)
+    finish_date = db.Column(db.DateTime, nullable=True)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    reading_sessions = db.relationship('ReadingSession', backref='book', lazy=True, cascade='all, delete-orphan')
+    quotes = db.relationship('BookQuote', backref='book', lazy=True, cascade='all, delete-orphan')
+
+class ReadingSession(db.Model):
+    __tablename__ = 'reading_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('saved_books.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    duration_minutes = db.Column(db.Integer, nullable=False)
+    pages_read = db.Column(db.Integer, nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+
+class BookQuote(db.Model):
+    __tablename__ = 'book_quotes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('saved_books.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    page_number = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ReadingGoal(db.Model):
+    __tablename__ = 'reading_goals'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    books_target = db.Column(db.Integer, nullable=False)
+    pages_target = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

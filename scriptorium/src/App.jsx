@@ -7,6 +7,7 @@ import BookDetails from './pages/BookDetails';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import CollectionDetail from './pages/CollectionDetail';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -42,6 +43,11 @@ function App() {
             <Route path="dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="collections/:id" element={
+              <ProtectedRoute>
+                <CollectionDetail />
               </ProtectedRoute>
             } />
           </Route>

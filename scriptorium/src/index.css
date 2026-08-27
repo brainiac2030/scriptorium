@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
-/* Define our custom Scriptorium theme */
+/* Define our custom Scriptorium theme with more depth */
 @theme {
-  --color-burgundy-50: #F5E6E8;
-  --color-burgundy-100: #E8CDD2;
-  --color-burgundy-200: #D4A5AD;
-  --color-burgundy-300: #BF7D88;
-  --color-burgundy-400: #A95A66;
-  --color-burgundy-500: #943D4A;
-  --color-burgundy-600: #722F37;
-  --color-burgundy-700: #5F272E;
-  --color-burgundy-800: #4B1F24;
-  --color-burgundy-900: #3D191E;
+  --color-burgundy-50: #FDF5F6;
+  --color-burgundy-100: #F5E6E8;
+  --color-burgundy-200: #E8CDD2;
+  --color-burgundy-300: #D4A5AD;
+  --color-burgundy-400: #BF7D88;
+  --color-burgundy-500: #A95A66;
+  --color-burgundy-600: #943D4A;
+  --color-burgundy-700: #722F37;
+  --color-burgundy-800: #5F272E;
+  --color-burgundy-900: #4B1F24;
 
   --color-cream-50: #FEFDFB;
   --color-cream-100: #F9F5F0;
@@ -23,17 +23,25 @@
   --color-gold-500: #C9A961;
   --color-gold-600: #B89850;
 
-  --font-family-serif: 'Playfair Display', serif;
-  --font-family-sans: 'Inter', sans-serif;
+  --font-family-serif: 'Playfair Display', 'Georgia', serif;
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @layer base {
   body {
     @apply bg-cream-100 text-gray-800 antialiased;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(114, 47, 55, 0.03) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(201, 169, 97, 0.03) 0px, transparent 50%);
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-serif tracking-tight;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
   }
 }
 
@@ -57,4 +65,157 @@
 
 .break-inside-avoid {
   break-inside: avoid;
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Enhanced Skeleton Loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #F0E8DC 0%,
+    #E8DCC8 50%,
+    #F0E8DC 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-cream-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-burgundy-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-burgundy-400;
+}
+
+/* Enhanced Shadows */
+.shadow-soft {
+  box-shadow: 0 4px 20px -2px rgba(114, 47, 55, 0.08),
+              0 2px 8px -2px rgba(114, 47, 55, 0.04);
+}
+
+.shadow-lift {
+  box-shadow: 0 12px 40px -8px rgba(114, 47, 55, 0.15),
+              0 8px 20px -8px rgba(114, 47, 55, 0.1);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 30px rgba(114, 47, 55, 0.2);
+}
+
+/* Gradient Text */
+.text-gradient {
+  background: linear-gradient(135deg, #722F37 0%, #943D4A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Smooth Transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Focus States */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  @apply outline-none ring-2 ring-burgundy-500 ring-offset-2 ring-offset-cream-100;
+}
+
+/* Line Clamp Utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

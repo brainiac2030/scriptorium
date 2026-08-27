@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bookmark, Star } from 'lucide-react';
+import { Bookmark, Star, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import SaveToCollectionModal from './SaveToCollectionModal';

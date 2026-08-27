@@ -272,7 +272,7 @@ function Dashboard() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pages to Read (optional)
+                  Pages to Read 
                 </label>
                 <input
                   type="number"

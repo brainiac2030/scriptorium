@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import BookCard from './BookCard';
-import { ChevronRight } from 'lucide-react';
 
 function BookSection({ title, apiUrl }) {
   const [books, setBooks] = useState([]);
@@ -14,37 +13,40 @@ function BookSection({ title, apiUrl }) {
         // Subjects API returns `works`, Search API returns `docs`
         setBooks(data.works || data.docs || []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load section:', title, err);
       } finally {
         setLoading(false);
       }
     };
     fetchBooks();
-  }, [apiUrl]);
+  }, [apiUrl, title]);
 
   // Skeleton Loader
-  if (loading) return (
-    <div className="mb-16">
-      <h2 className="font-serif text-3xl text-burgundy-700 mb-6">{title}</h2>
-      <div className="masonry-grid">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="break-inside-avoid mb-6">
-            <div className="aspect-[2/3] bg-cream-200 rounded-2xl animate-pulse"></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <section className="mb-4">
+        <h2 className="font-serif text-2xl md:text-3xl text-burgundy-700 mb-6">
+          {title}
+        </h2>
+        <div className="masonry-grid">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="break-inside-avoid mb-6">
+              <div className="aspect-[2/3] bg-cream-200 rounded-2xl animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (books.length === 0) return null;
 
   return (
-    <section className="mb-16">
+    <section className="mb-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-3xl text-burgundy-700">{title}</h2>
-        <button className="flex items-center gap-1 text-burgundy-600 hover:text-burgundy-800 font-medium text-sm transition-colors">
-          View All <ChevronRight className="w-4 h-4" />
-        </button>
+        <h2 className="font-serif text-2xl md:text-3xl text-burgundy-700">
+          {title}
+        </h2>
       </div>
       <div className="masonry-grid">
         {books.map((book) => (

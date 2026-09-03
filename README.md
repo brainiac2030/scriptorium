@@ -56,7 +56,7 @@ Scriptorium integrates with the Open Library API to give users access to million
 - Flask-JWT-Extended
 - Flask-Bcrypt
 - Marshmallow
-- PostgreSQL (production) / SQLite (development)
+- PostgreSQL (production) / SQLite 
 
 ---
 
@@ -69,7 +69,7 @@ Scriptorium integrates with the Open Library API to give users access to million
 ### Prerequisites
 - Node.js 18+
 - Python 3.10+
-- PostgreSQL (optional for production)
+- PostgreSQL 
 
 ### 1. Clone the repository
 
@@ -83,11 +83,11 @@ cd scriptorium
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate          
 pip install -r requirements.txt
 
 # Create .env file
-cp .env.example .env              # or create manually
+cp .env.example .env              
 ```
 
 Example `.env`:
@@ -95,7 +95,7 @@ Example `.env`:
 ```env
 SECRET_KEY=your-secret-key
 JWT_SECRET_KEY=your-jwt-secret
-DATABASE_URL=sqlite:///app.db     # or PostgreSQL URL
+DATABASE_URL=sqlite:///app.db     
 ```
 
 Run migrations and start the server:

@@ -1,68 +1,20 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { createContext, useCallback, useContext, useState } from 'react';
+import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 
 const ToastContext = createContext();
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
-  }
-  return context;
-};
+export const useToast = () => { const context = useContext(ToastContext); if (!context) throw new Error('useToast must be used within ToastProvider'); return context; };
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
-
+  const removeToast = useCallback((id) => setToasts((items) => items.filter((item) => item.id !== id)), []);
   const addToast = useCallback((message, type = 'success', duration = 3500) => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, message, type }]);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, duration);
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
+    setToasts((items) => [...items, { id, message, type }]);
+    window.setTimeout(() => removeToast(id), duration);
+  }, [removeToast]);
   const success = useCallback((message) => addToast(message, 'success'), [addToast]);
   const error = useCallback((message) => addToast(message, 'error'), [addToast]);
   const info = useCallback((message) => addToast(message, 'info'), [addToast]);
 
-  return (
-    <ToastContext.Provider value={{ success, error, info }}>
-      {children}
-
-      {/* Toast Container */}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-lift border animate-slideUp ${
-              toast.type === 'success'
-                ? 'bg-white border-green-200'
-                : toast.type === 'error'
-                ? 'bg-white border-red-200'
-                : 'bg-white border-burgundy-200'
-            }`}
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
-              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-red-600" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 text-burgundy-600" />}
-            </div>
-            <p className="flex-1 text-sm text-gray-800 leading-snug">{toast.message}</p>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </ToastContext.Provider>
-  );
+  return <ToastContext.Provider value={{ success, error, info }}>{children}<div className="pointer-events-none fixed inset-x-4 bottom-4 z-[100] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-full sm:max-w-sm" aria-live="polite">{toasts.map((toast) => { const Icon = toast.type === 'success' ? CheckCircle2 : toast.type === 'error' ? AlertCircle : Info; return <div key={toast.id} className="pointer-events-auto flex w-full items-start gap-3 border border-burgundy-900/15 bg-cream-50 p-4 shadow-xl animate-slideUp"><Icon className={`mt-0.5 h-5 w-5 shrink-0 ${toast.type === 'error' ? 'text-red-700' : toast.type === 'success' ? 'text-green-700' : 'text-burgundy-700'}`} /><p className="flex-1 text-sm leading-5 text-gray-800">{toast.message}</p><button onClick={() => removeToast(toast.id)} aria-label="Dismiss notification" className="text-gray-400 hover:text-gray-700"><X className="h-4 w-4" /></button></div>; })}</div></ToastContext.Provider>;
 };

@@ -1,164 +1,90 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Search, LogOut, User, LayoutDashboard, Menu, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Search, LogOut, User, Library, Menu, X, Compass } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useState, useRef, useEffect } from 'react';
+
+function Wordmark() {
+  return (
+    <span className="flex items-center gap-3">
+      <span className="grid h-8 w-7 place-items-center border border-burgundy-800 bg-burgundy-800 text-[11px] font-bold tracking-wide text-cream-50">S</span>
+      <span className="font-serif text-xl font-bold tracking-tight text-burgundy-900">Scriptorium</span>
+    </span>
+  );
+}
 
 function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const menuRef = useRef(null);
 
-  
+  useEffect(() => { setMobileOpen(false); }, [location.pathname, location.search]);
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const close = (event) => menuRef.current && !menuRef.current.contains(event.target) && setShowUserMenu(false);
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-      setMobileMenuOpen(false);
-    }
+  const handleSearch = (event) => {
+    event.preventDefault();
+    if (!searchQuery.trim()) return;
+    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchQuery('');
   };
 
-  const handleLogout = () => {
-    logout();
-    setShowUserMenu(false);
-    navigate('/');
-  };
+  const navClass = ({ isActive }) => `text-sm font-medium ${isActive ? 'text-burgundy-800' : 'text-gray-600 hover:text-burgundy-800'}`;
 
   return (
-    <nav className="glass border-b border-burgundy-100 sticky top-0 z-50 shadow-soft">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
-            <div className="relative">
-              <div className="bg-gradient-to-br from-burgundy-600 to-burgundy-800 p-2.5 rounded-xl group-hover:shadow-glow transition-all duration-300">
-                <BookOpen className="w-6 h-6 text-cream-50" />
-              </div>
+    <header className="sticky top-0 z-40 border-b border-burgundy-900/10 bg-cream-100/95 backdrop-blur-md">
+      <div className="page-shell flex h-[68px] items-center gap-7">
+        <Link to="/" aria-label="Scriptorium home" className="shrink-0"><Wordmark /></Link>
+
+        <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary navigation">
+          <NavLink to="/" end className={navClass}>Discover</NavLink>
+          {user && <NavLink to="/dashboard" className={navClass}>My library</NavLink>}
+        </nav>
+
+        <form onSubmit={handleSearch} className="ml-auto hidden w-full max-w-sm md:block">
+          <label className="relative block">
+            <span className="sr-only">Search books</span>
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search title, author, or subject" className="w-full border-b border-burgundy-900/25 bg-transparent py-2 pl-10 pr-3 text-sm outline-none placeholder:text-gray-500 focus:border-burgundy-700" />
+          </label>
+        </form>
+
+        <div className="hidden items-center gap-3 sm:flex">
+          {user ? (
+            <div className="relative" ref={menuRef}>
+              <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex h-10 items-center gap-2 border border-burgundy-900/20 px-3 text-sm font-medium text-burgundy-900 hover:bg-cream-50" aria-expanded={showUserMenu}>
+                <User className="h-4 w-4" /><span className="max-w-24 truncate">{user.username}</span>
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-56 border border-burgundy-900/15 bg-cream-50 p-2 shadow-xl">
+                  <div className="border-b border-burgundy-900/10 px-3 py-2.5"><p className="text-sm font-semibold text-burgundy-900">{user.username}</p><p className="truncate text-xs text-gray-500">{user.email}</p></div>
+                  <Link to="/dashboard" onClick={() => setShowUserMenu(false)} className="mt-1 flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-cream-200"><Library className="h-4 w-4" />My library</Link>
+                  <button onClick={() => { logout(); navigate('/'); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" />Sign out</button>
+                </div>
+              )}
             </div>
-            <div className="hidden sm:block">
-              <span className="font-serif text-2xl font-bold text-gradient">
-                Scriptorium
-              </span>
-              <p className="text-xs text-gray-500 -mt-1">Your personal library</p>
-            </div>
-          </Link>
-
-          {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <form onSubmit={handleSearch} className="relative w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-burgundy-600 transition-colors" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search titles, authors, genres..."
-                className="w-full pl-12 pr-4 py-2.5 bg-white border-2 border-cream-300 rounded-full focus:outline-none focus:border-burgundy-500 focus:shadow-lift transition-all placeholder-gray-400 text-sm"
-              />
-            </form>
-          </div>
-
-          {/* Right Side */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Mobile search button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2.5 text-burgundy-700 hover:bg-burgundy-50 rounded-full transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
-            </button>
-
-            {user ? (
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-burgundy-600 to-burgundy-700 text-white rounded-full hover:shadow-lift transition-all font-medium text-sm"
-                >
-                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <User className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="hidden sm:inline max-w-[100px] truncate">
-                    {user.username}
-                  </span>
-                </button>
-
-                {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lift border border-burgundy-100 py-2 animate-scaleIn z-50">
-                    <div className="px-4 py-2 border-b border-burgundy-50">
-                      <p className="text-sm font-semibold text-burgundy-800 truncate">
-                        {user.username}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    </div>
-
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-cream-100 transition-colors"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-burgundy-600" />
-                      My Library
-                    </Link>
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="hidden sm:inline-flex px-4 py-2 text-burgundy-700 hover:bg-burgundy-50 rounded-full font-medium text-sm transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-burgundy-600 to-burgundy-700 text-white rounded-full hover:shadow-lift transition-all font-medium text-sm"
-                >
-                  Get Started
-                </Link>
-              </div>
-            )}
-          </div>
+          ) : (
+            <><Link to="/login" className="px-3 py-2 text-sm font-semibold text-burgundy-900">Sign in</Link><Link to="/signup" className="button-primary">Start your library</Link></>
+          )}
         </div>
 
-        {/* Mobile Search Bar */}
-        {mobileMenuOpen && (
-          <div className="md:hidden pb-4 animate-slideUp">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search books..."
-                autoFocus
-                className="w-full pl-12 pr-4 py-3 bg-white border-2 border-cream-300 rounded-full focus:outline-none focus:border-burgundy-500 transition-all placeholder-gray-400"
-              />
-            </form>
-          </div>
-        )}
+        <button className="ml-auto grid h-10 w-10 place-items-center border border-burgundy-900/20 md:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
       </div>
-    </nav>
+
+      {mobileOpen && (
+        <div className="border-t border-burgundy-900/10 bg-cream-50 px-5 py-5 md:hidden">
+          <form onSubmit={handleSearch} className="relative mb-5"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search books" className="field pl-10" autoFocus /></form>
+          <nav className="space-y-1"><Link to="/" className="flex items-center gap-3 py-3 font-medium text-burgundy-900"><Compass className="h-4 w-4" />Discover</Link>{user && <Link to="/dashboard" className="flex items-center gap-3 py-3 font-medium text-burgundy-900"><Library className="h-4 w-4" />My library</Link>}</nav>
+          {!user && <div className="mt-4 grid grid-cols-2 gap-3"><Link to="/login" className="button-secondary">Sign in</Link><Link to="/signup" className="button-primary">Join free</Link></div>}
+        </div>
+      )}
+    </header>
   );
 }
 

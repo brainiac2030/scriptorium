@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BookOpen, ArrowLeft } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
@@ -10,16 +11,15 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import CollectionDetail from './pages/CollectionDetail';
 
-
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-cream-100">
+      <div className="flex min-h-[65vh] items-center justify-center" role="status">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-burgundy-200 border-t-burgundy-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-burgundy-700 font-medium">Loading your library...</p>
+          <BookOpen className="mx-auto mb-4 h-8 w-8 animate-pulse text-burgundy-700" />
+          <p className="font-serif text-lg text-burgundy-900">Opening your library…</p>
         </div>
       </div>
     );
@@ -28,59 +28,33 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
+function NotFound() {
+  return (
+    <div className="mx-auto max-w-xl py-24 text-center">
+      <p className="eyebrow mb-5">Page 404</p>
+      <h1 className="text-4xl text-burgundy-900 sm:text-5xl">This page has gone missing.</h1>
+      <p className="mx-auto mt-5 max-w-md leading-7 text-gray-600">Like a borrowed book that never found its way home. Return to discovery and find your next read.</p>
+      <Link to="/" className="button-primary mt-8"><ArrowLeft className="h-4 w-4" /> Return to discover</Link>
+    </div>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public routes */}
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
               <Route path="search" element={<SearchResults />} />
               <Route path="book/:id" element={<BookDetails />} />
               <Route path="login" element={<Login />} />
               <Route path="signup" element={<Signup />} />
+              <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="collections/:id" element={<ProtectedRoute><CollectionDetail /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
             </Route>
-
-            {/* Protected routes */}
-            <Route path="/" element={<Layout />}>
-              <Route
-                path="dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="collections/:id"
-                element={
-                  <ProtectedRoute>
-                    <CollectionDetail />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-
-            {/* Catch-all 404 */}
-            <Route
-              path="*"
-              element={
-                <Layout>
-                  <div className="text-center py-32">
-                    <h1 className="font-serif text-6xl text-burgundy-800 mb-4">404</h1>
-                    <p className="text-xl text-gray-600 mb-8">Page not found</p>
-                    <a
-                      href="/"
-                      className="inline-flex items-center px-6 py-3 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-colors font-medium"
-                    >
-                      Back to Library
-                    </a>
-                  </div>
-                </Layout>
-              }
-            />
           </Routes>
         </BrowserRouter>
       </ToastProvider>

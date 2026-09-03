@@ -1,68 +1,16 @@
-import { BookOpen, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ArrowUpRight } from 'lucide-react';
 
 function Footer() {
   return (
-    <footer className="bg-white border-t border-burgundy-100 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-burgundy-600 to-burgundy-800 p-2 rounded-lg">
-              <BookOpen className="w-5 h-5 text-cream-50" />
-            </div>
-            <div>
-              <span className="font-serif text-xl font-bold text-burgundy-700">
-                Scriptorium
-              </span>
-              <p className="text-xs text-gray-500 -mt-0.5">
-                Your personal digital library
-              </p>
-            </div>
-          </div>
-
-          {/* Links */}
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <Link
-              to="/"
-              className="hover:text-burgundy-700 transition-colors"
-            >
-              Discover
-            </Link>
-            <Link
-              to="/dashboard"
-              className="hover:text-burgundy-700 transition-colors"
-            >
-              My Library
-            </Link>
-            <a
-              href="https://openlibrary.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-burgundy-700 transition-colors"
-            >
-              Open Library
-            </a>
-          </div>
-
-          {/* Credit */}
-          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-            
-          </div>
+    <footer className="border-t border-burgundy-900/15 bg-burgundy-900 text-cream-100">
+      <div className="page-shell py-12 sm:py-16">
+        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
+          <div><p className="font-serif text-2xl font-bold">Scriptorium</p><p className="mt-3 max-w-sm text-sm leading-6 text-cream-300">A quieter place to discover books, shape a personal library, and keep a record of the reading life.</p></div>
+          <div><p className="eyebrow !text-cream-400">Explore</p><div className="mt-4 flex flex-col gap-3 text-sm"><Link to="/" className="hover:text-white">Discover books</Link><Link to="/dashboard" className="hover:text-white">My library</Link></div></div>
+          <div><p className="eyebrow !text-cream-400">Book data</p><a href="https://openlibrary.org" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm hover:text-white">Open Library <ArrowUpRight className="h-3.5 w-3.5" /></a><p className="mt-3 text-xs leading-5 text-cream-400">Digitized editions are provided by Internet Archive.</p></div>
         </div>
-
-        <div className="mt-8 pt-6 border-t border-burgundy-50 text-center text-xs text-gray-400">
-          Book data powered by{' '}
-          <a
-            href="https://openlibrary.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-burgundy-600 hover:underline"
-          >
-            Open Library
-          </a>
-          {' '}· Digitized books via Internet Archive
-        </div>
+        <div className="mt-12 border-t border-white/10 pt-5 text-xs text-cream-400">© {new Date().getFullYear()} Scriptorium. Read with intention.</div>
       </div>
     </footer>
   );

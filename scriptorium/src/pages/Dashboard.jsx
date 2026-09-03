@@ -1,430 +1,121 @@
-import { useState, useEffect } from 'react';
-import {
-  Plus,
-  Library,
-  BookOpen,
-  TrendingUp,
-  Award,
-  Target,
-  BookMarked,
-} from 'lucide-react';
-import {
-  getCollections,
-  getSavedBooks,
-  getUserStats,
-  getReadingGoal,
-  setReadingGoal,
-} from '../api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, BookOpen, Library, Plus, Target } from 'lucide-react';
+import { getCollections, getReadingGoal, getSavedBooks, getUserStats, setReadingGoal, updateSavedBook } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import CollectionCard from '../components/CollectionCard';
 import CreateCollectionModal from '../components/CreateCollectionModal';
+import LibraryBookRow from '../components/LibraryBookRow';
+import ReadingSessionModal from '../components/ReadingSessionModal';
+import UpdateProgressModal from '../components/UpdateProgressModal';
+
+const filters = [
+  { value: 'all', label: 'All books' },
+  { value: 'reading', label: 'Reading now' },
+  { value: 'to_read', label: 'Want to read' },
+  { value: 'finished', label: 'Finished' },
+];
 
 function Dashboard() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
-
   const [collections, setCollections] = useState([]);
+  const [books, setBooks] = useState([]);
   const [stats, setStats] = useState(null);
   const [goal, setGoal] = useState(null);
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [goalForm, setGoalForm] = useState({ books_target: '', pages_target: '' });
+  const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentlyReading, setCurrentlyReading] = useState([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [goalForm, setGoalForm] = useState({ books_target: '', pages_target: '' });
+  const [sessionBook, setSessionBook] = useState(null);
+  const [progressBook, setProgressBook] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      const [collectionsRes, booksRes, statsRes] = await Promise.all([
-        getCollections(),
-        getSavedBooks(),
-        getUserStats(),
-      ]);
-
+      const [collectionsRes, booksRes, statsRes] = await Promise.all([getCollections(), getSavedBooks(), getUserStats()]);
       setCollections(collectionsRes.data || []);
+      setBooks(booksRes.data || []);
       setStats(statsRes.data);
+      try { const goalRes = await getReadingGoal(); setGoal(goalRes.data); }
+      catch (error) { if (error.response?.status !== 404) showError('Your reading goal could not be loaded.'); else setGoal(null); }
+    } catch { showError('Your library could not be loaded.'); }
+    finally { setLoading(false); }
+  }, [showError]);
 
-      // Extract currently reading books
-      const reading = (booksRes.data || []).filter((b) => b.status === 'reading');
-      setCurrentlyReading(reading);
+  useEffect(() => { loadData(); }, [loadData]);
 
-      try {
-        const goalRes = await getReadingGoal();
-        setGoal(goalRes.data);
-      } catch {
-        // No goal set yet — that's fine
-      }
-    } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-      showError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const currentlyReading = books.filter((book) => book.status === 'reading');
+  const visibleBooks = useMemo(() => filter === 'all' ? books : books.filter((book) => book.status === filter), [books, filter]);
+  const goalProgress = goal?.books_target ? Math.min(100, Math.round(((stats?.books_finished || 0) / goal.books_target) * 100)) : 0;
 
-  const handleSaveGoal = async (e) => {
-    e.preventDefault();
+  const changeStatus = async (bookId, status) => {
     try {
-      await setReadingGoal({
-        books_target: parseInt(goalForm.books_target),
-        pages_target: goalForm.pages_target
-          ? parseInt(goalForm.pages_target)
-          : null,
-      });
-      setShowGoalModal(false);
-      setGoalForm({ books_target: '', pages_target: '' });
-      success('Reading goal saved!');
-      fetchData();
-    } catch (err) {
-      showError('Failed to set goal');
-    }
+      const { data } = await updateSavedBook(bookId, { status });
+      setBooks((current) => current.map((book) => book.id === bookId ? data : book));
+      success(status === 'finished' ? 'Finished—well read.' : 'Reading status updated.');
+      loadData();
+    } catch { showError('Could not update reading status.'); }
   };
 
-  const handleCollectionDeleted = (id) => {
-    setCollections((prev) => prev.filter((c) => c.id !== id));
-    success('Collection deleted');
+  const openGoal = () => {
+    setGoalForm({ books_target: goal?.books_target?.toString() || '', pages_target: goal?.pages_target?.toString() || '' });
+    setGoalOpen(true);
   };
 
-  const getGoalProgress = () => {
-    if (!goal || !stats) return 0;
-    return Math.min(
-      100,
-      Math.round((stats.books_finished / goal.books_target) * 100)
-    );
+  const saveGoal = async (event) => {
+    event.preventDefault();
+    try {
+      await setReadingGoal({ books_target: Number(goalForm.books_target), pages_target: goalForm.pages_target ? Number(goalForm.pages_target) : null });
+      success('Your reading intention is set.');
+      setGoalOpen(false);
+      loadData();
+    } catch { showError('Could not save your reading goal.'); }
   };
+
+  if (loading) return <div className="page-shell py-12"><div className="skeleton h-5 w-32" /><div className="skeleton mt-5 h-14 max-w-xl" /><div className="mt-12 grid gap-8 lg:grid-cols-[1fr_320px]"><div>{Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton mb-3 h-28" />)}</div><div className="skeleton h-72" /></div></div>;
 
   return (
-    <div className="max-w-6xl mx-auto animate-fadeIn">
-      {/* Header */}
-      <div className="mb-10">
-        <h1 className="font-serif text-4xl md:text-5xl font-bold text-burgundy-800 mb-2">
-          Welcome back, <span className="italic">{user?.username}</span>
-        </h1>
-        <p className="text-gray-600 text-lg">
-          Your personal reading library and progress hub.
-        </p>
+    <div className="animate-fadeIn">
+      <header className="border-b border-burgundy-900/15 bg-cream-50">
+        <div className="page-shell py-12 sm:py-16"><p className="eyebrow mb-4">Your reading room</p><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><h1 className="text-4xl font-bold text-burgundy-900 sm:text-5xl">Good to see you, {user?.username}.</h1><p className="mt-4 max-w-2xl text-lg leading-7 text-gray-600">Pick up where you left off, or make space for whatever you want to read next.</p></div><Link to="/" className="button-secondary shrink-0">Discover something new <ArrowRight className="h-4 w-4" /></Link></div></div>
+      </header>
+
+      <div className="page-shell py-12 sm:py-16">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-16">
+          <main>
+            <section>
+              <div className="mb-5 flex items-end justify-between"><div><p className="eyebrow mb-2">In progress</p><h2 className="text-2xl font-bold text-burgundy-900">Your current reads</h2></div><span className="font-serif text-2xl text-burgundy-400">{currentlyReading.length}</span></div>
+              {currentlyReading.length ? currentlyReading.map((book) => <LibraryBookRow key={book.id} book={book} onStatusChange={changeStatus} onLogSession={setSessionBook} onUpdateProgress={setProgressBook} />) : <div className="border-y border-burgundy-900/15 py-10"><BookOpen className="h-6 w-6 text-burgundy-500" /><h3 className="mt-4 text-xl font-bold text-burgundy-900">No book open right now</h3><p className="mt-2 max-w-lg text-sm leading-6 text-gray-600">Choose a saved book below and mark it as “Reading now,” or discover something that earns your attention.</p><Link to="/" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-burgundy-700">Browse books <ArrowRight className="h-4 w-4" /></Link></div>}
+            </section>
+
+            <section className="mt-16">
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="eyebrow mb-2">Personal catalogue</p><h2 className="text-2xl font-bold text-burgundy-900">All saved books</h2></div><div className="hide-scrollbar flex gap-5 overflow-x-auto border-b border-burgundy-900/15">{filters.map((item) => <button key={item.value} onClick={() => setFilter(item.value)} className={`shrink-0 border-b-2 pb-2 text-xs font-semibold ${filter === item.value ? 'border-burgundy-700 text-burgundy-800' : 'border-transparent text-gray-500 hover:text-burgundy-800'}`}>{item.label} <span className="ml-1 text-gray-400">{item.value === 'all' ? books.length : books.filter((book) => book.status === item.value).length}</span></button>)}</div></div>
+              <div className="mt-5">{visibleBooks.length ? visibleBooks.map((book) => <LibraryBookRow key={book.id} book={book} onStatusChange={changeStatus} onLogSession={setSessionBook} onUpdateProgress={setProgressBook} />) : <div className="border-t border-burgundy-900/15 py-10 text-sm text-gray-600">There are no books on this shelf yet.</div>}</div>
+            </section>
+
+            <section className="mt-16">
+              <div className="mb-5 flex items-end justify-between gap-4"><div><p className="eyebrow mb-2">Made by you</p><h2 className="text-2xl font-bold text-burgundy-900">Collections</h2></div><button onClick={() => setCreateOpen(true)} className="button-primary"><Plus className="h-4 w-4" />New collection</button></div>
+              {collections.length ? collections.map((collection, index) => <CollectionCard key={collection.id} collection={collection} index={index} onDelete={(id) => setCollections((current) => current.filter((item) => item.id !== id))} />) : <div className="border-y border-burgundy-900/15 py-10"><Library className="h-6 w-6 text-burgundy-500" /><h3 className="mt-4 text-xl font-bold text-burgundy-900">Build your first shelf</h3><p className="mt-2 max-w-lg text-sm leading-6 text-gray-600">Collections can hold a season of reading, a subject you are studying, or books you want to share.</p><button onClick={() => setCreateOpen(true)} className="mt-5 text-sm font-semibold text-burgundy-700">Create a collection →</button></div>}
+            </section>
+          </main>
+
+          <aside className="space-y-10">
+            <section className="border-t-4 border-burgundy-800 bg-burgundy-900 p-7 text-cream-100"><div className="flex items-center justify-between"><p className="eyebrow !text-cream-400">{new Date().getFullYear()} intention</p><Target className="h-5 w-5 text-gold-400" /></div>{goal ? <><p className="mt-7 font-serif text-5xl font-bold">{stats?.books_finished || 0}<span className="text-2xl font-normal text-cream-400"> / {goal.books_target}</span></p><p className="mt-2 text-sm text-cream-300">books finished this year</p><div className="mt-6 h-1.5 bg-white/15"><div className="h-full bg-gold-400" style={{ width: `${goalProgress}%` }} /></div><button onClick={openGoal} className="mt-5 text-xs font-semibold text-cream-200 underline underline-offset-4">Adjust goal</button></> : <><h3 className="mt-7 text-2xl font-bold">Give the year a shape.</h3><p className="mt-3 text-sm leading-6 text-cream-300">Set a book goal as a gentle direction, not a score to chase.</p><button onClick={openGoal} className="mt-6 border border-cream-300 px-4 py-2.5 text-sm font-semibold hover:bg-white/10">Set an intention</button></>}</section>
+
+            <section className="border-y border-burgundy-900/15 py-6"><p className="eyebrow mb-5">Your library in numbers</p><dl className="space-y-4">{[{ label: 'Books saved', value: stats?.total_books || 0 }, { label: 'Books finished', value: stats?.books_finished || 0 }, { label: 'Pages travelled', value: (stats?.total_pages_read || 0).toLocaleString() }, { label: 'Sessions logged', value: stats?.reading_streak || 0 }].map((item) => <div key={item.label} className="flex items-baseline justify-between border-b border-burgundy-900/10 pb-3"><dt className="text-sm text-gray-600">{item.label}</dt><dd className="font-serif text-xl font-bold text-burgundy-900">{item.value}</dd></div>)}</dl></section>
+
+            {books[0]?.author && <section><p className="eyebrow mb-3">A path from your library</p><h3 className="text-xl font-bold text-burgundy-900">More by {books[0].author}</h3><p className="mt-2 text-sm leading-6 text-gray-600">Continue from an author already on your shelves.</p><Link to={`/search?q=${encodeURIComponent(books[0].author)}`} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-burgundy-700">Explore their work <ArrowRight className="h-4 w-4" /></Link></section>}
+          </aside>
+        </div>
       </div>
 
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          <div className="bg-white rounded-2xl shadow-soft p-5 border border-burgundy-100 flex items-center gap-4">
-            <div className="bg-burgundy-100 p-3 rounded-xl flex-shrink-0">
-              <Library className="w-6 h-6 text-burgundy-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Collections</p>
-              <p className="text-2xl md:text-3xl font-bold text-burgundy-800 font-serif">
-                {collections.length}
-              </p>
-            </div>
-          </div>
+      <CreateCollectionModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onCollectionCreated={loadData} />
+      <ReadingSessionModal isOpen={Boolean(sessionBook)} onClose={() => setSessionBook(null)} book={sessionBook} onSessionLogged={loadData} />
+      <UpdateProgressModal isOpen={Boolean(progressBook)} onClose={() => setProgressBook(null)} book={progressBook} onUpdated={loadData} />
 
-          <div className="bg-white rounded-2xl shadow-soft p-5 border border-burgundy-100 flex items-center gap-4">
-            <div className="bg-gold-400/20 p-3 rounded-xl flex-shrink-0">
-              <BookOpen className="w-6 h-6 text-gold-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Saved Books</p>
-              <p className="text-2xl md:text-3xl font-bold text-burgundy-800 font-serif">
-                {stats.total_books}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-soft p-5 border border-burgundy-100 flex items-center gap-4">
-            <div className="bg-green-100 p-3 rounded-xl flex-shrink-0">
-              <Award className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Finished</p>
-              <p className="text-2xl md:text-3xl font-bold text-burgundy-800 font-serif">
-                {stats.books_finished}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-soft p-5 border border-burgundy-100 flex items-center gap-4">
-            <div className="bg-blue-100 p-3 rounded-xl flex-shrink-0">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Pages Read</p>
-              <p className="text-2xl md:text-3xl font-bold text-burgundy-800 font-serif">
-                {(stats.total_pages_read || 0).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Currently Reading Section */}
-      {currentlyReading.length > 0 && (
-        <div className="mb-10">
-          <h2 className="font-serif text-2xl font-bold text-burgundy-700 mb-4 flex items-center gap-2">
-            <BookMarked className="w-5 h-5" />
-            Currently Reading
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {currentlyReading.map((book) => {
-              const progress =
-                book.total_pages && book.current_page
-                  ? Math.min(
-                      100,
-                      Math.round((book.current_page / book.total_pages) * 100)
-                    )
-                  : 0;
-
-              return (
-                <div
-                  key={book.id}
-                  className="bg-white rounded-2xl shadow-soft border border-burgundy-100 p-4 flex gap-4"
-                >
-                  <div className="w-16 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-cream-200">
-                    {book.cover_id ? (
-                      <img
-                        src={`https://covers.openlibrary.org/b/id/${book.cover_id}-M.jpg`}
-                        alt={book.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-burgundy-600 p-1 text-center font-serif">
-                        {book.title?.slice(0, 20)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-serif font-bold text-burgundy-800 line-clamp-2 text-sm leading-snug">
-                      {book.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 italic mt-0.5 line-clamp-1">
-                      {book.author}
-                    </p>
-                    {book.total_pages ? (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>
-                            Page {book.current_page || 0} of {book.total_pages}
-                          </span>
-                          <span className="font-semibold">{progress}%</span>
-                        </div>
-                        <div className="w-full bg-cream-200 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className="bg-burgundy-600 h-full rounded-full transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 mt-2">No page count</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Reading Goal */}
-      {goal && stats ? (
-        <div className="bg-gradient-to-br from-burgundy-600 to-burgundy-800 rounded-2xl shadow-lift p-6 text-white mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2.5 rounded-lg">
-                <Target className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-serif text-xl font-bold">
-                  {new Date().getFullYear()} Reading Goal
-                </h3>
-                <p className="text-white/80 text-sm">
-                  {stats.books_finished} of {goal.books_target} books finished
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setGoalForm({
-                  books_target: goal.books_target.toString(),
-                  pages_target: goal.pages_target?.toString() || '',
-                });
-                setShowGoalModal(true);
-              }}
-              className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm font-medium"
-            >
-              Edit Goal
-            </button>
-          </div>
-
-          <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
-            <div
-              className="bg-white h-full rounded-full transition-all duration-700"
-              style={{ width: `${getGoalProgress()}%` }}
-            />
-          </div>
-          <p className="text-center text-white/80 text-sm mt-2">
-            {getGoalProgress()}% complete
-          </p>
-        </div>
-      ) : (
-        !loading && (
-          <div className="bg-cream-50 border-2 border-dashed border-burgundy-200 rounded-2xl p-8 text-center mb-10">
-            <Target className="w-10 h-10 text-burgundy-400 mx-auto mb-3" />
-            <h3 className="font-serif text-xl font-bold text-burgundy-800 mb-2">
-              Set Your Reading Goal
-            </h3>
-            <p className="text-gray-600 mb-5 max-w-md mx-auto">
-              Challenge yourself to read more books this year.
-            </p>
-            <button
-              onClick={() => setShowGoalModal(true)}
-              className="px-6 py-3 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-colors font-medium"
-            >
-              Set Annual Goal
-            </button>
-          </div>
-        )
-      )}
-
-      {/* Collections Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-2xl font-bold text-burgundy-700">
-          Your Collections
-        </h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-colors font-medium text-sm shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          New Collection
-        </button>
-      </div>
-
-      {/* Loading State */}
-      {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl shadow-soft overflow-hidden animate-pulse"
-            >
-              <div className="h-28 bg-cream-200" />
-              <div className="p-5 space-y-3">
-                <div className="h-6 bg-cream-200 rounded w-3/4" />
-                <div className="h-4 bg-cream-200 rounded w-full" />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && collections.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-soft p-12 border border-burgundy-100 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-burgundy-100 rounded-full mb-4">
-            <Library className="w-8 h-8 text-burgundy-600" />
-          </div>
-          <h3 className="font-serif text-xl font-bold text-burgundy-800 mb-2">
-            No collections yet
-          </h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Collections help you organize books by theme, mood, or goal. Create
-            your first one to get started.
-          </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-colors font-medium"
-          >
-            <Plus className="w-5 h-5" />
-            Create Your First Collection
-          </button>
-        </div>
-      )}
-
-      {/* Collections Grid */}
-      {!loading && collections.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {collections.map((collection) => (
-            <CollectionCard
-              key={collection.id}
-              collection={collection}
-              onDelete={handleCollectionDeleted}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Create Collection Modal */}
-      <CreateCollectionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onCollectionCreated={fetchData}
-      />
-
-      {/* Goal Modal */}
-      {showGoalModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-lift max-w-md w-full p-8 relative animate-scaleIn">
-            <h2 className="font-serif text-2xl font-bold text-burgundy-800 mb-6">
-              {goal ? 'Edit' : 'Set'} Reading Goal
-            </h2>
-            <form onSubmit={handleSaveGoal} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Books to read in {new Date().getFullYear()}
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={goalForm.books_target}
-                  onChange={(e) =>
-                    setGoalForm({ ...goalForm, books_target: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-burgundy-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-burgundy-500"
-                  placeholder="e.g. 24"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pages target{' '}
-                  <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={goalForm.pages_target}
-                  onChange={(e) =>
-                    setGoalForm({ ...goalForm, pages_target: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-burgundy-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-burgundy-500"
-                  placeholder="e.g. 5000"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowGoalModal(false)}
-                  className="flex-1 py-3 border border-burgundy-200 text-burgundy-700 font-medium rounded-xl hover:bg-cream-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 bg-burgundy-600 text-white font-semibold rounded-xl hover:bg-burgundy-700 transition-colors"
-                >
-                  Save Goal
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {goalOpen && <div className="fixed inset-0 z-50 grid place-items-center bg-burgundy-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="goal-title"><div className="w-full max-w-md bg-cream-50 p-7 shadow-2xl sm:p-8"><p className="eyebrow mb-2">Annual intention</p><h2 id="goal-title" className="text-2xl font-bold text-burgundy-900">{goal ? 'Adjust your goal' : 'Shape your reading year'}</h2><p className="mt-3 text-sm leading-6 text-gray-600">Choose a number that feels inviting, not punishing.</p><form onSubmit={saveGoal} className="mt-7 space-y-5"><div><label htmlFor="book-target" className="text-sm font-semibold text-gray-700">Books to finish</label><input id="book-target" type="number" min="1" required value={goalForm.books_target} onChange={(e) => setGoalForm({ ...goalForm, books_target: e.target.value })} className="field mt-2" autoFocus /></div><div><label htmlFor="page-target" className="text-sm font-semibold text-gray-700">Page target <span className="font-normal text-gray-400">(optional)</span></label><input id="page-target" type="number" min="1" value={goalForm.pages_target} onChange={(e) => setGoalForm({ ...goalForm, pages_target: e.target.value })} className="field mt-2" /></div><div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setGoalOpen(false)} className="button-secondary">Cancel</button><button type="submit" className="button-primary">Save intention</button></div></form></div></div>}
     </div>
   );
 }

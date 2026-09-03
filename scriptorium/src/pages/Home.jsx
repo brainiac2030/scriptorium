@@ -1,139 +1,56 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight, BookOpen, Compass, Library, PenLine } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import BookSection from '../components/BookSection';
-import { Sparkles, BookOpen, Target, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+
+const pathways = [
+  { label: 'A short, absorbing read', query: 'short stories', note: 'For a single sitting' },
+  { label: 'A world to disappear into', query: 'epic fantasy', note: 'For immersive reading' },
+  { label: 'A new way to see things', query: 'essays philosophy', note: 'For curious minds' },
+  { label: 'A mystery worth staying up for', query: 'mystery thriller', note: 'For page-turning nights' },
+];
 
 function Home() {
   const { user } = useAuth();
 
   return (
     <div className="animate-fadeIn">
-      {/* Hero Section */}
-      <div className="relative text-center mb-16 md:mb-20 pt-10 md:pt-14 pb-12 md:pb-16">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-72 md:w-96 h-72 md:h-96 bg-burgundy-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
-          <div
-            className="absolute top-0 right-1/4 w-72 md:w-96 h-72 md:h-96 bg-gold-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
-            style={{ animationDelay: '2s' }}
-          />
+      <section className="border-b border-burgundy-900/15">
+        <div className="page-shell grid min-h-[590px] items-center gap-12 py-16 lg:grid-cols-[1.15fr_.85fr] lg:py-24">
+          <div>
+            <p className="eyebrow mb-6">A home for your reading life</p>
+            <h1 className="max-w-4xl text-5xl font-bold leading-[1.04] text-burgundy-900 sm:text-6xl lg:text-7xl">Find the book that meets you <em className="font-normal text-burgundy-600">where you are.</em></h1>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-gray-600">Discover with intention, keep a library that means something, and turn pages into a reading life you can look back on.</p>
+            <div className="mt-9"><SearchBar /></div>
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-gray-500"><span>Try:</span>{['Octavia Butler', 'quiet novels', 'art history'].map((term) => <Link key={term} to={`/search?q=${encodeURIComponent(term)}`} className="border-b border-gray-400 hover:border-burgundy-700 hover:text-burgundy-700">{term}</Link>)}</div>
+          </div>
+
+          <aside className="relative hidden min-h-[420px] border-l border-burgundy-900/15 pl-12 lg:block" aria-label="Scriptorium reading philosophy">
+            <div className="absolute left-12 top-2 h-72 w-48 rotate-[-5deg] bg-burgundy-800 p-7 text-cream-100 shadow-xl"><BookOpen className="h-7 w-7" /><p className="mt-20 font-serif text-2xl leading-snug">Books are not content. They are places we return from changed.</p><span className="absolute bottom-6 text-[10px] uppercase tracking-[.2em] text-cream-300">The Scriptorium principle</span></div>
+            <div className="absolute bottom-3 right-4 h-64 w-44 rotate-[7deg] border border-burgundy-900/20 bg-gold-400 p-6 text-burgundy-900 shadow-lg"><PenLine className="h-6 w-6" /><p className="mt-14 font-serif text-xl font-bold leading-snug">Choose slowly.<br />Read deeply.<br />Remember more.</p></div>
+          </aside>
         </div>
+      </section>
 
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-burgundy-100 to-burgundy-50 text-burgundy-700 rounded-full text-sm font-medium mb-6 shadow-soft animate-slideUp">
-            <Sparkles className="w-4 h-4" />
-            <span>Your personal digital library</span>
-          </div>
+      {user && <section className="bg-burgundy-800 text-cream-100"><div className="page-shell flex flex-col justify-between gap-5 py-6 sm:flex-row sm:items-center"><div><p className="text-sm text-cream-300">Welcome back, {user.username}.</p><p className="mt-1 font-serif text-xl font-bold">Your reading life is waiting.</p></div><Link to="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold">Continue to your library <ArrowRight className="h-4 w-4" /></Link></div></section>}
 
-          <h1
-            className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold text-burgundy-800 mb-5 md:mb-6 leading-tight animate-slideUp"
-            style={{ animationDelay: '0.1s' }}
-          >
-            Discover Your Next <br />
-            <span className="text-gradient italic">Great Read</span>
-          </h1>
-
-          <p
-            className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed animate-slideUp px-2"
-            style={{ animationDelay: '0.2s' }}
-          >
-            Wander through curated collections, explore timeless classics, and
-            find the books that will captivate your imagination.
-          </p>
-
-          <div className="animate-slideUp px-2" style={{ animationDelay: '0.3s' }}>
-            <SearchBar />
-          </div>
-
-          {/* CTA for logged-in users */}
-          {user && (
-            <div
-              className="mt-6 animate-slideUp"
-              style={{ animationDelay: '0.35s' }}
-            >
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 text-burgundy-700 hover:text-burgundy-900 font-medium text-sm transition-colors"
-              >
-                Go to My Library →
-              </Link>
-            </div>
-          )}
-
-          {/* Feature highlights */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 mt-14 md:mt-16 max-w-4xl mx-auto px-2">
-            <div
-              className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-soft hover:shadow-lift transition-all animate-slideUp"
-              style={{ animationDelay: '0.4s' }}
-            >
-              <div className="bg-burgundy-100 p-3 rounded-xl mb-3">
-                <BookOpen className="w-6 h-6 text-burgundy-600" />
-              </div>
-              <h3 className="font-serif font-semibold text-burgundy-800 mb-1">
-                Discover
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Explore millions of books by topic and genre
-              </p>
-            </div>
-
-            <div
-              className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-soft hover:shadow-lift transition-all animate-slideUp"
-              style={{ animationDelay: '0.5s' }}
-            >
-              <div className="bg-gold-400/20 p-3 rounded-xl mb-3">
-                <Target className="w-6 h-6 text-gold-600" />
-              </div>
-              <h3 className="font-serif font-semibold text-burgundy-800 mb-1">
-                Organize
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Create collections and track your reading goals
-              </p>
-            </div>
-
-            <div
-              className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-soft hover:shadow-lift transition-all animate-slideUp"
-              style={{ animationDelay: '0.6s' }}
-            >
-              <div className="bg-green-100 p-3 rounded-xl mb-3">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-serif font-semibold text-burgundy-800 mb-1">
-                Track
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Log reading sessions and monitor progress
-              </p>
-            </div>
-          </div>
+      <section className="page-shell py-14 sm:py-20">
+        <div className="grid gap-10 lg:grid-cols-[.65fr_1.35fr]">
+          <div><p className="eyebrow mb-3">Start with a feeling</p><h2 className="text-3xl font-bold text-burgundy-900 sm:text-4xl">What kind of reading do you need today?</h2><p className="mt-4 leading-7 text-gray-600">The best discovery begins with a reason, not an algorithm.</p></div>
+          <div className="grid sm:grid-cols-2">{pathways.map((item, index) => <Link key={item.query} to={`/search?q=${encodeURIComponent(item.query)}`} className={`group flex min-h-32 items-end justify-between gap-5 border-b border-burgundy-900/15 py-6 sm:px-6 ${index % 2 === 0 ? 'sm:border-r' : ''} ${index < 2 ? 'sm:border-t' : ''}`}><div><p className="text-xs text-gray-500">{item.note}</p><h3 className="mt-2 text-lg font-bold text-burgundy-900">{item.label}</h3></div><ArrowRight className="h-5 w-5 shrink-0 text-burgundy-600 transition-transform group-hover:translate-x-1" /></Link>)}</div>
         </div>
-      </div>
+      </section>
 
-      {/* Curated Sections */}
-      <div className="space-y-16 md:space-y-20">
-        <BookSection
-          title="Trending Now"
-          apiUrl="https://openlibrary.org/subjects/science_fiction.json?limit=15"
-        />
-        <BookSection
-          title="Timeless Classics"
-          apiUrl="https://openlibrary.org/subjects/classics.json?limit=15"
-        />
-        <BookSection
-          title="Mystery & Thriller"
-          apiUrl="https://openlibrary.org/subjects/mystery_and_detective_stories.json?limit=15"
-        />
-        <BookSection
-          title="Editor's Picks: Romance"
-          apiUrl="https://openlibrary.org/subjects/romance.json?limit=15"
-        />
-        <BookSection
-          title="New & Notable: Fantasy"
-          apiUrl="https://openlibrary.org/subjects/fantasy.json?limit=15"
-        />
-      </div>
+      <div className="border-y border-burgundy-900/15 bg-cream-50"><div className="page-shell"><BookSection title="Enduring fiction" subject="classic_literature" description="Novels and stories that continue to find new readers across generations." /></div></div>
+      <div className="page-shell"><BookSection title="Other worlds, other futures" subject="science_fiction" description="Speculative writing that makes the strange feel possible—and the familiar feel new." /></div>
+      <div className="border-y border-burgundy-900/15 bg-cream-50"><div className="page-shell"><BookSection title="Mysteries of motive" subject="mystery_and_detective_stories" description="Investigations, secrets, and the enduring question of why people do what they do." /></div></div>
+
+      <section className="page-shell py-16 sm:py-24">
+        <div className="grid gap-10 border-y border-burgundy-900/20 py-12 md:grid-cols-3">
+          {[{ icon: Compass, title: 'Discover with context', body: 'Browse focused shelves and search millions of works without losing the thread.' }, { icon: Library, title: 'Shape your shelves', body: 'Collect books by mood, project, season, or whatever matters to your reading.' }, { icon: PenLine, title: 'Keep your momentum', body: 'Track pages and sessions so your library reflects the life lived inside it.' }].map(({ icon: Icon, title, body }) => <div key={title}><Icon className="h-5 w-5 text-burgundy-600" /><h3 className="mt-5 text-lg font-bold text-burgundy-900">{title}</h3><p className="mt-2 text-sm leading-6 text-gray-600">{body}</p></div>)}
+        </div>
+      </section>
     </div>
   );
 }

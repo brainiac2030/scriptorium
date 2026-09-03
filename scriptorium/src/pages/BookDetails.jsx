@@ -1,371 +1,94 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Bookmark,
-  BookOpen,
-  User,
-  Tag,
-  ExternalLink,
-  Globe,
-  Calendar,
-  BookMarked,
-  CheckCircle2,
-} from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, ArrowUpRight, Bookmark, BookOpen, Calendar, Check, Layers, RefreshCw } from 'lucide-react';
+import { getAuthor, getEditions, getSavedBooks, getWork } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import SaveToCollectionModal from '../components/SaveToCollectionModal';
+import BookCover from '../components/BookCover';
 
 function BookDetails() {
   const { id } = useParams();
   const workKey = decodeURIComponent(id);
-
   const { user } = useAuth();
   const { info } = useToast();
-
   const [book, setBook] = useState(null);
-  const [authorName, setAuthorName] = useState('Unknown Author');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [editions, setEditions] = useState([]);
+  const [authorName, setAuthorName] = useState('Unknown author');
   const [readLinks, setReadLinks] = useState([]);
+  const [editionCount, setEditionCount] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    const fetchBookDetails = async () => {
-      setLoading(true);
-      setError(null);
-
+    let active = true;
+    setLoading(true);
+    setError(false);
+    const load = async () => {
       try {
-        // Fetch work details
-        const response = await fetch(`https://openlibrary.org${workKey}.json`);
-        if (!response.ok) throw new Error('Failed to fetch book details.');
-        const data = await response.json();
+        const { data } = await getWork(workKey);
+        if (!active) return;
         setBook(data);
-
-        // Fetch author name
-        if (data.authors && data.authors.length > 0) {
-          try {
-            const authorKey = data.authors[0].author.key;
-            const authorResponse = await fetch(`https://openlibrary.org${authorKey}.json`);
-            if (authorResponse.ok) {
-              const authorData = await authorResponse.json();
-              setAuthorName(authorData.name || 'Unknown Author');
-            }
-          } catch (err) {
-            console.error('Failed to fetch author name', err);
-          }
-        }
-
-        // Try to get editions + Internet Archive availability
-        try {
-          const editionsRes = await fetch(
-            `https://openlibrary.org${workKey}/editions.json?limit=20`
-          );
-          if (editionsRes.ok) {
-            const editionsData = await editionsRes.json();
-            const entries = editionsData.entries || [];
-            setEditions(entries);
-
-            // Collect possible read/borrow links
-            const links = [];
-            entries.forEach((edition) => {
-              if (edition.ocaid) {
-                links.push({
-                  type: 'archive',
-                  label: 'Read on Internet Archive',
-                  url: `https://archive.org/stream/${edition.ocaid}`,
-                  ocaid: edition.ocaid,
-                });
-              }
-              if (edition.isbn_13?.[0] || edition.isbn_10?.[0]) {
-                // We can later expand this
-              }
-            });
-
-            
-            const unique = Array.from(
-              new Map(links.map((item) => [item.ocaid, item])).values()
-            );
-            setReadLinks(unique);
-          }
-        } catch (err) {
-          console.error('Failed to fetch editions', err);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+        const authorKey = data.authors?.[0]?.author?.key;
+        const requests = [getEditions(workKey, 20)];
+        if (authorKey) requests.push(getAuthor(authorKey));
+        if (user) requests.push(getSavedBooks());
+        const results = await Promise.allSettled(requests);
+        if (!active) return;
+        const editionsData = results[0].status === 'fulfilled' ? results[0].value.data : {};
+        const editions = editionsData.entries || [];
+        setEditionCount(editionsData.size || editions.length);
+        const links = editions.filter((edition) => edition.ocaid).map((edition) => ({ id: edition.ocaid, url: `https://archive.org/stream/${edition.ocaid}` }));
+        setReadLinks(Array.from(new Map(links.map((link) => [link.id, link])).values()));
+        let resultIndex = 1;
+        if (authorKey) { if (results[resultIndex]?.status === 'fulfilled') setAuthorName(results[resultIndex].value.data.name || 'Unknown author'); resultIndex += 1; }
+        if (user && results[resultIndex]?.status === 'fulfilled') setIsSaved((results[resultIndex].value.data || []).some((saved) => saved.work_key === workKey));
+      } catch { if (active) setError(true); }
+      finally { if (active) setLoading(false); }
     };
+    load();
+    return () => { active = false; };
+  }, [workKey, user, reloadKey]);
 
-    fetchBookDetails();
-  }, [workKey]);
-
-  const handleSaveClick = () => {
-    if (!user) {
-      info('Please sign in to save books to your collections');
-      return;
-    }
+  const handleSave = () => {
+    if (!user) return info('Sign in to save this book and track your reading.');
     setShowSaveModal(true);
   };
 
-  // Loading skeleton
-  if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto py-8">
-        <div className="h-6 w-32 bg-cream-200 rounded mb-8 animate-pulse" />
-        <div className="bg-white rounded-3xl shadow-soft border border-burgundy-100 overflow-hidden">
-          <div className="flex flex-col md:flex-row">
-            <div className="md:w-1/3 p-8 md:p-10 bg-cream-100 flex justify-center">
-              <div className="w-full max-w-[280px] aspect-[2/3] bg-cream-200 rounded-xl animate-pulse" />
-            </div>
-            <div className="md:w-2/3 p-8 md:p-10 space-y-5">
-              <div className="h-10 bg-cream-200 rounded w-3/4 animate-pulse" />
-              <div className="h-6 bg-cream-200 rounded w-1/3 animate-pulse" />
-              <div className="h-4 bg-cream-200 rounded w-full animate-pulse" />
-              <div className="h-4 bg-cream-200 rounded w-5/6 animate-pulse" />
-              <div className="h-4 bg-cream-200 rounded w-4/6 animate-pulse" />
-              <div className="flex gap-3 pt-4">
-                <div className="h-12 w-40 bg-cream-200 rounded-full animate-pulse" />
-                <div className="h-12 w-40 bg-cream-200 rounded-full animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="page-shell py-12"><div className="mb-10 skeleton h-4 w-28" /><div className="grid gap-12 md:grid-cols-[300px_1fr]"><div className="skeleton aspect-[2/3]" /><div><div className="skeleton h-12 w-4/5" /><div className="skeleton mt-5 h-5 w-1/3" /><div className="skeleton mt-12 h-4" /><div className="skeleton mt-3 h-4" /><div className="skeleton mt-3 h-4 w-4/5" /></div></div></div>;
 
-  if (error) {
-    return (
-      <div className="text-center py-24">
-        <p className="text-lg text-red-600 mb-4">{error}</p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Library
-        </Link>
-      </div>
-    );
-  }
+  if (error || !book) return <div className="page-shell py-24 text-center"><p className="eyebrow">Catalogue interruption</p><h1 className="mt-4 text-3xl font-bold text-burgundy-900">We couldn’t open this book.</h1><p className="mt-3 text-gray-600">The record may be unavailable, or the catalogue may be offline.</p><div className="mt-7 flex justify-center gap-3"><Link to="/" className="button-secondary"><ArrowLeft className="h-4 w-4" />Discover</Link><button onClick={() => setReloadKey((v) => v + 1)} className="button-primary"><RefreshCw className="h-4 w-4" />Try again</button></div></div>;
 
-  if (!book) {
-    return (
-      <div className="text-center py-24">
-        <p className="text-lg text-gray-600">Book not found.</p>
-      </div>
-    );
-  }
-
-  const description =
-    typeof book.description === 'string'
-      ? book.description
-      : book.description?.value || 'No description available for this book.';
-
-  const coverId = book.covers && book.covers.length > 0 ? book.covers[0] : null;
-  const firstPublishYear = book.first_publish_date || book.first_publish_year;
-
-  // Prepare book object for the modal
-  const bookForModal = {
-    key: workKey,
-    work_key: workKey,
-    title: book.title,
-    author_name: [authorName],
-    author: authorName,
-    cover_i: coverId,
-    cover_id: coverId,
-  };
+  const description = typeof book.description === 'string' ? book.description : book.description?.value || 'No description is available for this work yet.';
+  const coverId = book.covers?.[0];
+  const publishDate = book.first_publish_date || book.first_publish_year;
+  const modalBook = { key: workKey, work_key: workKey, title: book.title, author_name: [authorName], author: authorName, cover_i: coverId, cover_id: coverId };
 
   return (
-    <div className="max-w-5xl mx-auto animate-fadeIn">
-      {/* Back link */}
-      <Link
-        to="/"
-        className="inline-flex items-center gap-2 text-burgundy-600 hover:text-burgundy-800 mb-8 transition-colors font-medium group"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to Library
-      </Link>
-
-      <div className="bg-white rounded-3xl shadow-soft border border-burgundy-100 overflow-hidden">
-        <div className="flex flex-col md:flex-row">
-          {/* ========== COVER SIDEBAR ========== */}
-          <div className="md:w-1/3 p-8 md:p-10 flex flex-col items-center bg-gradient-to-b from-cream-100 to-cream-50">
-            {coverId ? (
-              <img
-                src={`https://covers.openlibrary.org/b/id/${coverId}-L.jpg`}
-                alt={book.title}
-                className="w-full max-w-[280px] rounded-xl shadow-lift object-cover"
-              />
-            ) : (
-              <div className="w-full max-w-[280px] aspect-[2/3] bg-cream-200 flex items-center justify-center rounded-xl shadow-lift text-burgundy-600 font-serif text-2xl p-6 text-center">
-                {book.title}
-              </div>
-            )}
-
-            {/* Quick actions */}
-            <div className="w-full max-w-[280px] mt-6 space-y-3">
-              <button
-                onClick={handleSaveClick}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-burgundy-600 text-white rounded-xl hover:bg-burgundy-700 transition-all font-medium shadow-soft hover:shadow-lift"
-              >
-                <Bookmark className="w-5 h-5" />
-                Save to Collection
-              </button>
-
-              {readLinks.length > 0 && (
-                <a
-                  href={readLinks[0].url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-white border-2 border-burgundy-200 text-burgundy-700 rounded-xl hover:bg-burgundy-50 transition-all font-medium"
-                >
-                  <BookOpen className="w-5 h-5" />
-                  Read Online
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* ========== DETAILS CONTENT ========== */}
-          <div className="md:w-2/3 p-8 md:p-10">
-            {/* Title + Author */}
-            <div className="mb-6">
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-burgundy-800 leading-tight mb-3">
-                {book.title}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-gray-600">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-burgundy-500" />
-                  <span className="text-lg italic">{authorName}</span>
-                </div>
-
-                {firstPublishYear && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-burgundy-500" />
-                    <span>{firstPublishYear}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="hidden md:flex flex-wrap gap-3 mb-8">
-              <button
-                onClick={handleSaveClick}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-all font-medium shadow-soft hover:shadow-lift"
-              >
-                <Bookmark className="w-5 h-5" />
-                Save to Collection
-              </button>
-
-              {readLinks.length > 0 ? (
-                <a
-                  href={readLinks[0].url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-burgundy-300 text-burgundy-700 rounded-full hover:bg-burgundy-50 transition-all font-medium"
-                >
-                  <BookOpen className="w-5 h-5" />
-                  Read Online
-                  <ExternalLink className="w-4 h-4 opacity-70" />
-                </a>
-              ) : (
-                <a
-                  href={`https://openlibrary.org${workKey}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-burgundy-200 text-burgundy-600 rounded-full hover:bg-cream-100 transition-all font-medium"
-                >
-                  <Globe className="w-5 h-5" />
-                  View on Open Library
-                  <ExternalLink className="w-4 h-4 opacity-70" />
-                </a>
-              )}
-            </div>
-
-            {/* Availability notice */}
-            {readLinks.length > 0 && (
-              <div className="mb-8 flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-green-800 text-sm">
-                    Available to read online
-                  </p>
-                  <p className="text-green-700 text-sm mt-0.5">
-                    This book has a digitized version on Internet Archive.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Description */}
-            <div className="mb-8">
-              <h3 className="font-serif text-xl font-semibold text-burgundy-700 mb-3 flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
-                About this book
-              </h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                {description}
-              </p>
-            </div>
-
-            {/* Subjects */}
-            {book.subjects && book.subjects.length > 0 && (
-              <div className="mb-2">
-                <h3 className="font-serif text-xl font-semibold text-burgundy-700 mb-4 flex items-center gap-2">
-                  <Tag className="w-5 h-5" />
-                  Subjects & Themes
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {book.subjects.slice(0, 18).map((subject, index) => (
-                    <span
-                      key={index}
-                      className="bg-cream-100 text-burgundy-700 px-3.5 py-1.5 rounded-full text-sm font-medium border border-burgundy-100 hover:bg-burgundy-50 transition-colors"
-                    >
-                      {subject}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Extra read links if multiple */}
-            {readLinks.length > 1 && (
-              <div className="mt-8 pt-6 border-t border-burgundy-100">
-                <h4 className="text-sm font-semibold text-burgundy-700 mb-3">
-                  More reading options
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {readLinks.slice(1).map((link, idx) => (
-                    <a
-                      key={idx}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-cream-100 text-burgundy-700 rounded-lg hover:bg-burgundy-50 transition-colors"
-                    >
-                      <BookMarked className="w-4 h-4" />
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+    <div className="animate-fadeIn">
+      <div className="page-shell py-7"><Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-burgundy-700 hover:text-burgundy-900"><ArrowLeft className="h-4 w-4" />Back to discovery</Link></div>
+      <section className="border-y border-burgundy-900/15 bg-cream-50">
+        <div className="page-shell grid gap-10 py-12 md:grid-cols-[280px_1fr] lg:grid-cols-[340px_1fr] lg:gap-20 lg:py-16">
+          <div><BookCover coverId={coverId} title={book.title} size="L" className="book-shadow mx-auto aspect-[2/3] w-full max-w-[340px]" loading="eager" /></div>
+          <div className="flex flex-col justify-center">
+            <p className="eyebrow">A work in the Open Library</p>
+            <h1 className="mt-4 max-w-4xl text-4xl font-bold leading-tight text-burgundy-900 sm:text-5xl lg:text-6xl">{book.title}</h1>
+            <p className="mt-5 font-serif text-xl italic text-gray-600">by {authorName}</p>
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 border-y border-burgundy-900/15 py-4 text-sm text-gray-600">{publishDate && <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-burgundy-600" />First published {publishDate}</span>}{editionCount > 0 && <span className="flex items-center gap-2"><Layers className="h-4 w-4 text-burgundy-600" />{editionCount} editions sampled</span>}{readLinks.length > 0 && <span className="flex items-center gap-2 text-green-800"><Check className="h-4 w-4" />Digital edition available</span>}</div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={handleSave} className="button-primary"><Bookmark className="h-4 w-4" />{isSaved ? 'Save to another collection' : 'Add to my library'}</button>{readLinks.length > 0 ? <a href={readLinks[0].url} target="_blank" rel="noopener noreferrer" className="button-secondary"><BookOpen className="h-4 w-4" />Read online <ArrowUpRight className="h-4 w-4" /></a> : <a href={`https://openlibrary.org${workKey}`} target="_blank" rel="noopener noreferrer" className="button-secondary">View source record <ArrowUpRight className="h-4 w-4" /></a>}</div>
+            {isSaved && <p className="mt-4 flex items-center gap-2 text-sm text-green-800"><Check className="h-4 w-4" />This work is already in your library.</p>}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Save Modal */}
-      <SaveToCollectionModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        book={bookForModal}
-      />
+      <section className="page-shell grid gap-12 py-14 lg:grid-cols-[1fr_320px] lg:gap-20 lg:py-20">
+        <article><p className="eyebrow mb-4">About the work</p><h2 className="text-3xl font-bold text-burgundy-900">What you’ll find inside</h2><p className="mt-6 max-w-3xl whitespace-pre-line text-[17px] leading-8 text-gray-700">{description}</p></article>
+        <aside className="border-t border-burgundy-900/15 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><p className="eyebrow mb-4">Themes & subjects</p>{book.subjects?.length ? <div className="flex flex-wrap gap-2">{book.subjects.slice(0, 16).map((subject) => <Link key={subject} to={`/search?q=${encodeURIComponent(subject)}`} className="border border-burgundy-900/20 px-3 py-1.5 text-xs text-burgundy-800 hover:bg-burgundy-800 hover:text-white">{subject}</Link>)}</div> : <p className="text-sm leading-6 text-gray-500">No subject information is available for this record.</p>}{readLinks.length > 1 && <div className="mt-9 border-t border-burgundy-900/15 pt-6"><p className="eyebrow mb-3">Other digital editions</p>{readLinks.slice(1, 4).map((link, index) => <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between border-b border-burgundy-900/10 py-3 text-sm font-medium text-burgundy-800">Edition {index + 2}<ArrowUpRight className="h-4 w-4" /></a>)}</div>}</aside>
+      </section>
+
+      <SaveToCollectionModal isOpen={showSaveModal} onClose={() => setShowSaveModal(false)} book={modalBook} />
     </div>
   );
 }

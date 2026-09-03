@@ -1,162 +1,58 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Library, Check } from 'lucide-react';
-import { getCollections, addSavedBook } from '../api';
+import { useEffect, useState } from 'react';
+import { Check, FolderPlus, Library, X } from 'lucide-react';
+import { addSavedBook, createCollection, getCollections } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { useNavigate } from 'react-router-dom';
+
+const statuses = [{ value: 'to_read', label: 'Want to read' }, { value: 'reading', label: 'Reading now' }, { value: 'finished', label: 'Finished' }];
 
 function SaveToCollectionModal({ isOpen, onClose, book }) {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
-  const navigate = useNavigate();
   const [collections, setCollections] = useState([]);
+  const [status, setStatus] = useState('to_read');
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen && user) {
-      fetchCollections();
-    }
+    if (!isOpen || !user) return;
+    setLoading(true); setError(''); setCreating(false);
+    getCollections().then(({ data }) => setCollections(data || [])).catch(() => setError('Your collections could not be loaded.')).finally(() => setLoading(false));
   }, [isOpen, user]);
-
-  const fetchCollections = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await getCollections();
-      setCollections(response.data || []);
-    } catch (err) {
-      setError('Failed to load collections');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async (collectionId) => {
-    if (!book) return;
-
-    setSavingId(collectionId);
-    setError('');
-
-    try {
-      const authorName = Array.isArray(book.author_name)
-        ? book.author_name[0]
-        : book.author || book.author_name || 'Unknown Author';
-
-      await addSavedBook({
-        collection_id: collectionId,
-        work_key: book.work_key || book.key,
-        title: book.title,
-        author: authorName,
-        cover_id: book.cover_i || book.cover_id || null,
-        status: 'to_read',
-        total_pages: book.number_of_pages_median || book.number_of_pages || null,
-      });
-
-      success(`"${book.title}" saved to your collection`);
-      onClose();
-    } catch (err) {
-      const message = err.response?.data?.error || 'Failed to save book';
-      setError(message);
-      showError(message);
-    } finally {
-      setSavingId(null);
-    }
-  };
-
-  const handleCreateNew = () => {
-    onClose();
-    navigate('/dashboard');
-  };
 
   if (!isOpen) return null;
 
+  const save = async (collectionId) => {
+    setSavingId(collectionId); setError('');
+    try {
+      const author = Array.isArray(book.author_name) ? book.author_name[0] : book.author || book.author_name || 'Unknown author';
+      await addSavedBook({ collection_id: collectionId, work_key: book.work_key || book.key, title: book.title, author, cover_id: book.cover_i || book.cover_id || null, status, total_pages: book.number_of_pages_median || book.number_of_pages || null });
+      success(`“${book.title}” is now in your library.`); onClose();
+    } catch (err) { const message = err.response?.data?.error || 'Could not save this book.'; setError(message); showError(message); }
+    finally { setSavingId(null); }
+  };
+
+  const createAndSave = async (event) => {
+    event.preventDefault();
+    setLoading(true); setError('');
+    try { const { data } = await createCollection({ name: newName, description: '' }); setCollections((current) => [...current, data]); setCreating(false); setNewName(''); await save(data.id); }
+    catch (err) { const message = err.response?.data?.errors?.name?.[0] || err.response?.data?.error || 'Could not create the collection.'; setError(message); }
+    finally { setLoading(false); }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lift max-w-md w-full p-6 md:p-8 relative animate-scaleIn">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-cream-100 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="mb-6 pr-8">
-          <h2 className="font-serif text-2xl font-bold text-burgundy-800 mb-1">
-            Save to Collection
-          </h2>
-          <p className="text-gray-600 text-sm">
-            Choose a collection for{' '}
-            <span className="font-semibold italic text-burgundy-700">
-              "{book?.title}"
-            </span>
-          </p>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-burgundy-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="save-title">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto bg-cream-50 p-6 shadow-2xl sm:p-8">
+        <div className="flex items-start justify-between gap-4"><div><p className="eyebrow mb-2">Add to your library</p><h2 id="save-title" className="text-2xl font-bold text-burgundy-900">Choose a shelf</h2><p className="mt-2 line-clamp-1 text-sm text-gray-600">{book?.title}</p></div><button onClick={onClose} aria-label="Close" className="p-2 text-gray-500 hover:text-burgundy-900"><X className="h-5 w-5" /></button></div>
+        <div className="mt-7"><p className="text-xs font-semibold uppercase tracking-[.12em] text-gray-500">Reading status</p><div className="mt-3 grid grid-cols-3 border border-burgundy-900/20">{statuses.map((item) => <button key={item.value} onClick={() => setStatus(item.value)} className={`min-h-11 border-r border-burgundy-900/15 px-2 text-xs font-semibold last:border-r-0 ${status === item.value ? 'bg-burgundy-800 text-white' : 'text-burgundy-900 hover:bg-cream-200'}`}>{item.label}</button>)}</div></div>
+        {error && <p className="mt-5 border-l-2 border-red-600 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+        <div className="mt-7 border-t border-burgundy-900/15 pt-5"><div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-[.12em] text-gray-500">Collections</p><button onClick={() => setCreating(!creating)} className="flex items-center gap-1.5 text-xs font-semibold text-burgundy-700"><FolderPlus className="h-4 w-4" />New collection</button></div>
+          {creating && <form onSubmit={createAndSave} className="mt-4 flex gap-2"><input value={newName} onChange={(e) => setNewName(e.target.value)} required maxLength="100" placeholder="Collection name" className="field" autoFocus /><button className="button-primary shrink-0" disabled={loading}>Create & save</button></form>}
+          {loading && !creating ? <div className="mt-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-14" />)}</div> : collections.length ? <div className="mt-4 divide-y divide-burgundy-900/10 border-y border-burgundy-900/10">{collections.map((collection) => <button key={collection.id} onClick={() => save(collection.id)} disabled={savingId !== null} className="group flex w-full items-center justify-between gap-4 py-4 text-left disabled:opacity-50"><div><p className="font-serif font-bold text-burgundy-900">{collection.name}</p>{collection.description && <p className="mt-1 line-clamp-1 text-xs text-gray-500">{collection.description}</p>}</div>{savingId === collection.id ? <span className="text-xs text-gray-500">Saving…</span> : <Check className="h-4 w-4 text-burgundy-300 group-hover:text-burgundy-700" />}</button>)}</div> : !loading && <div className="mt-6 border-y border-burgundy-900/15 py-8 text-center"><Library className="mx-auto h-6 w-6 text-burgundy-500" /><p className="mt-3 font-serif font-bold text-burgundy-900">No collections yet</p><p className="mt-1 text-sm text-gray-600">Create one above and this book will be added to it.</p></div>}
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-cream-200 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : collections.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-burgundy-100 rounded-full mb-4">
-              <Library className="w-8 h-8 text-burgundy-600" />
-            </div>
-            <h3 className="font-serif text-lg font-bold text-burgundy-800 mb-2">
-              No collections yet
-            </h3>
-            <p className="text-gray-600 text-sm mb-5">
-              Create your first collection to start organizing books.
-            </p>
-            <button
-              onClick={handleCreateNew}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-burgundy-600 text-white rounded-full hover:bg-burgundy-700 transition-colors font-medium text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Create Collection
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-            {collections.map((collection) => (
-              <button
-                key={collection.id}
-                onClick={() => handleSave(collection.id)}
-                disabled={savingId !== null}
-                className="w-full text-left p-4 bg-cream-50 hover:bg-burgundy-50 border border-burgundy-100 rounded-xl transition-all disabled:opacity-60 group"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="font-semibold text-burgundy-800 truncate">
-                      {collection.name}
-                    </h4>
-                    {collection.description && (
-                      <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">
-                        {collection.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0">
-                    {savingId === collection.id ? (
-                      <div className="w-5 h-5 border-2 border-burgundy-300 border-t-burgundy-600 rounded-full animate-spin" />
-                    ) : (
-                      <Plus className="w-5 h-5 text-burgundy-500 group-hover:text-burgundy-700 transition-colors" />
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

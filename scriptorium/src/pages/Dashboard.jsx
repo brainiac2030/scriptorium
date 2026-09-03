@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Library, Plus, Target } from 'lucide-react';
 import { getCollections, getReadingGoal, getSavedBooks, getUserStats, setReadingGoal, updateSavedBook } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import BookJournalModal from '../components/BookJournalModal';
 import CollectionCard from '../components/CollectionCard';
 import CreateCollectionModal from '../components/CreateCollectionModal';
 import LibraryBookRow from '../components/LibraryBookRow';

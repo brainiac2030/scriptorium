@@ -61,10 +61,10 @@
   .page-shell { @apply mx-auto w-full max-w-[1400px] px-5 sm:px-8 lg:px-12; }
   .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-burgundy-600; }
   .rule { @apply border-t border-burgundy-900/15; }
-  .button-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 bg-burgundy-800 px-5 py-2.5 text-sm font-semibold text-cream-50 hover:bg-burgundy-900 disabled:opacity-50; }
-  .button-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 border border-burgundy-900/25 bg-transparent px-5 py-2.5 text-sm font-semibold text-burgundy-900 hover:bg-white/60 disabled:opacity-50; }
-  .field { @apply w-full border border-burgundy-900/20 bg-cream-50 px-4 py-3 text-[15px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-burgundy-700 focus:ring-1 focus:ring-burgundy-700; }
-  .paper { @apply border border-burgundy-900/10 bg-cream-50; }
+  .button-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-burgundy-800 px-5 py-2.5 text-sm font-semibold text-cream-50 shadow-sm hover:-translate-y-0.5 hover:bg-burgundy-900 hover:shadow-md disabled:translate-y-0 disabled:opacity-50; }
+  .button-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-burgundy-900/20 bg-cream-50 px-5 py-2.5 text-sm font-semibold text-burgundy-900 shadow-sm hover:-translate-y-0.5 hover:border-burgundy-900/35 hover:bg-white disabled:translate-y-0 disabled:opacity-50; }
+  .field { @apply w-full rounded-xl border border-burgundy-900/20 bg-cream-50 px-4 py-3 text-[15px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-burgundy-700 focus:ring-2 focus:ring-burgundy-100; }
+  .paper { @apply rounded-xl border border-burgundy-900/10 bg-cream-50 shadow-sm; }
 }
 
 @keyframes rise {

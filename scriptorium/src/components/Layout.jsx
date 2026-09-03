@@ -7,8 +7,8 @@ function Layout() {
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   return (
-    <div className="flex min-h-screen flex-col bg-cream-100">
-      <Navbar />
+    <div className={`flex min-h-screen flex-col ${isAuthPage ? 'bg-[#2d3142]' : 'bg-cream-100'}`}>
+      {!isAuthPage && <Navbar />}
       <main className={`flex-1 ${isAuthPage ? '' : 'pb-16 sm:pb-24'}`}>
         <Outlet />
       </main>

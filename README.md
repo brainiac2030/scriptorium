@@ -1,7 +1,7 @@
-Video demo   https://drive.google.com/file/d/1i1BqkAYYDQUQMXoiSmYdfgJW3vszjl11/view?usp=sharing
+
 
 ```markdown
-# Scriptorium — Personal Digital Library
+Scriptorium — Personal Digital Library
 
 A full-stack web application that helps readers discover, organize, and track their reading journey.
 
@@ -9,7 +9,7 @@ A full-stack web application that helps readers discover, organize, and track th
 
 ---
 
-## Overview
+ Overview
 
 Scriptorium integrates with the Open Library API to give users access to millions of books while providing personal tools for:
 
@@ -22,7 +22,7 @@ Scriptorium integrates with the Open Library API to give users access to million
 
 ---
 
-## Features
+Features
 
 - User authentication (signup / login with JWT)
 - Book discovery via Open Library
@@ -39,9 +39,9 @@ Scriptorium integrates with the Open Library API to give users access to million
 
 ---
 
-## Tech Stack
+Tech Stack
 
-### Frontend
+ Frontend
 - React 19
 - React Router DOM 7
 - Vite 8
@@ -49,7 +49,7 @@ Scriptorium integrates with the Open Library API to give users access to million
 - Axios
 - Lucide React (icons)
 
-### Backend
+ Backend
 - Flask 3.1
 - Flask-SQLAlchemy
 - Flask-Migrate
@@ -58,27 +58,27 @@ Scriptorium integrates with the Open Library API to give users access to million
 - Marshmallow
 - PostgreSQL (production) / SQLite 
 
----
 
 
 
----
 
-## Getting Started
 
-### Prerequisites
+
+ Getting Started
+
+ Prerequisites
 - Node.js 18+
 - Python 3.10+
 - PostgreSQL 
 
-### 1. Clone the repository
+ 1. Clone the repository
 
 ```bash
 git clone https://github.com/brainiac2030/scriptorium.git
 cd scriptorium
 ```
 
-### 2. Backend Setup
+ 2. Backend Setup
 
 ```bash
 cd backend

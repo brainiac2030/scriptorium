@@ -37,7 +37,7 @@ function Home() {
 
       <section className="page-shell py-14 sm:py-20">
         <div className="grid gap-10 lg:grid-cols-[.65fr_1.35fr]">
-          <div><p className="eyebrow mb-3">Start with a feeling</p><h2 className="text-3xl font-bold text-burgundy-900 sm:text-4xl">What kind of reading do you need today?</h2><p className="mt-4 leading-7 text-gray-600">The best discovery begins with a reason, not an algorithm.</p></div>
+          <div><p className="eyebrow mb-3">Start with a feeling</p><h2 className="text-3xl font-bold text-burgundy-900 sm:text-4xl">What kind of reading do you need today?</h2><p className="mt-4 leading-7 text-gray-600">The best discovery begins with a reason.</p></div>
           <div className="grid sm:grid-cols-2">{pathways.map((item, index) => <Link key={item.query} to={`/search?q=${encodeURIComponent(item.query)}`} className={`group flex min-h-32 items-end justify-between gap-5 border-b border-burgundy-900/15 py-6 sm:px-6 ${index % 2 === 0 ? 'sm:border-r' : ''} ${index < 2 ? 'sm:border-t' : ''}`}><div><p className="text-xs text-gray-500">{item.note}</p><h3 className="mt-2 text-lg font-bold text-burgundy-900">{item.label}</h3></div><ArrowRight className="h-5 w-5 shrink-0 text-burgundy-600 transition-transform group-hover:translate-x-1" /></Link>)}</div>
         </div>
       </section>
